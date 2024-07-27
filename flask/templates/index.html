@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main>
+        <header>
+            <h4>Index</h4>
+        </header>
+
+        <div class="welcome_message">
+            <h1>Hi {{ session.username }}!</h1>
+            <p>Welcome to the index page...</p>
+        </div>
+
+        <div class="actions">
+            <a href="{{ url_for('logout') }}" class="btn">Logout</a>
+        </div>
+    </main>
+</body>
+</html>

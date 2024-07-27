@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  <main>
+    <header>
+      <h4>Login</h4>
+    </header>
+
+    <form action="{{ url_for('login') }}" method="post">
+      <div class="msg">{{ msg }}</div>
+
+      <div class="form_wrapper">
+        <input id="username" name="username" type="text" required>
+        <label for="username">Username</label>
+        <i class="material-icons">person</i>
+      </div>
+
+      <div class="form_wrapper">
+        <input id="password" name="password" type="password" required data-toggle="password">
+        <label for="password">Password</label>
+        <i class="material-icons toggle-password">visibility</i>
+      </div>
+
+      <!-- <div class="form_wrapper">
+        <input id="passport" name="passport" type="text" required>
+        <label for="passport">Passport</label>
+        <i class="material-icons">settings</i>
+      </div> -->
+
+      <div class="remember_box">
+        <div class="remember">
+          <input type="checkbox" id="remember"> Remember me
+        </div>
+        <a href="#">Forgot Password?</a>
+      </div>
+
+      <button type="submit">Login</button>
+
+      <div class="new_account">
+        Don't have an account? <a href="{{ url_for('register') }}">Sign up</a>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    const togglePasswordButtons = document.querySelectorAll('.toggle-password');
+    togglePasswordButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const passwordInput = button.parentElement.querySelector('input[type="password"]');
+        passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+        button.classList.toggle('hide-btn');
+      });
+    });
+  </script>
+
+</body>
+
+</html>

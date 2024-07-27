@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main>
+    <header>
+        <h4>Register</h4>
+    </header>
+
+    <form action="{{ url_for('register') }}" method="post">
+        <div class="msg">{{ msg }}</div>
+
+        <div class="form_wrapper">
+            <input id="username" name="username" type="text" required>
+            <label for="username">Username</label>
+            <i class="material-icons">person</i>
+        </div>
+
+        <div class="form_wrapper">
+            <input id="password" name="password" type="password" required>
+            <label for="password">Password</label>
+            <i class="material-icons">visibility</i>
+        </div>
+
+        <div class="form_wrapper">
+            <input id="passport" name="passport" type="text" required>
+            <label for="passport">Passport</label>
+            <i class="material-icons">settings</i>
+        </div>
+<!-- 
+        <div class="form_wrapper">
+            <input id="phone" name="phone" type="text"  required>
+            <label for="phone">Phone Number</label>
+            <i class="material-icons">phone</i>
+        </div> -->
+
+        <button type="submit">Sign Up</button>
+
+        <div class="new_account">
+            Already have an account? <a href="{{ url_for('login') }}">Sign In here</a>
+        </div>
+    </form>
+</main>
+  <script>
+    const togglePasswordButtons = document.querySelectorAll('.toggle-password');
+    togglePasswordButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const passwordInput = button.parentElement.querySelector('input[type="password"]');
+        passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+        button.classList.toggle('hide-btn');
+      });
+    });
+
+  </script>
+ 
+
+</body>
+
+</html>

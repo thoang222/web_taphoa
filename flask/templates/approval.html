@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main>
+        <header>
+            <h4>Approval Page</h4>
+        </header>
+        <form action="{{ url_for('expdate') }}" method="post">
+            <div class="msg">{{ msg }}</div>
+
+            <div class="form_wrapper">
+                <input id="username" name="username" type="text" required>
+                <label for="username">Username</label>
+                <i class="material-icons">person</i>
+            </div>
+
+            <div class="form_wrapper">
+                <input id="expdate" name="expdate" type="text" required>
+                <label for="expdate">Number of Days</label>
+                <i class="material-icons">calendar_today</i>
+            </div>
+
+            <button type="submit">Approval</button>
+            <div class="new_account">
+                Don't have an account? <a href="{{ url_for('register') }}">Sign Up here</a>
+                <br>
+                <a href="{{ url_for('expdate') }}" class="btn-primary" style="margin-bottom: 10px;">Expdate</a>
+            </div>
+        </form>
+    </main>
+</body>
+</html>

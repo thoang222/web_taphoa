@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remove Account</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main>
+        <header>
+            <h4>Remove Account</h4>
+        </header>
+
+        <form action="{{ url_for('remove_account') }}" method="post">
+            <div class="msg">{{ msg }}</div>
+
+            <div class="form_wrapper">
+                <label for="passport">Are you sure you want to remove your account?</label>
+            </div>
+
+            <button type="submit">Remove</button>
+            <div class="new_account">
+                Don't have an account? <a href="{{ url_for('register') }}">Sign Up here</a>
+                <br>
+                <a href="/expdate" class="btn-primary" style="margin-bottom: 10px;">Expdate</a>
+                <br>
+                <a href="/expzalo" class="btn-primary" style="margin-bottom: 10px;">Expzalo</a>
+                <br>
+                <a href="/expfacebook" class="button" style="margin-bottom: 10px;">Expfacebook</a>
+                <br>
+                <a href='/exptiktok' class="button" style="margin-bottom: 10px;">Exptiktok</a>
+                <br>
+                <a href="/exptelegram" class="button" style="margin-bottom: 10px;">Exptelegram</a>
+                <br>
+                <a href="/country" class="button" style="margin-bottom: 10px;">Country</a>
+                <br>
+                <a href="/delete_account" class="button" style="margin-bottom: 10px;">Delete account</a>
+                <br>
+                <a href="/logout2" class="button" style="margin-bottom: 10px;">Logout</a>
+            </div>
+            </div>
+        </form>
+    </main>
+</body>
+</html>
