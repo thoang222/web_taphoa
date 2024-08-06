@@ -1,13 +1,12 @@
 from threading import Thread
 import mysql.connector
-import os
-import json
+from mysql.connector import pooling
 import requests
 import telebot
 import re
 import datetime
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, abort
 from mysql1 import mysql_data
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
 def send_mess_tele(token: str, group_id: str, content: str):
     try:
@@ -35,26 +34,38 @@ class MyApp:
         self.valid_password = "km@123456"
         self.app.secret_key = 'nhothoang'
 
-        self.host = "localhost"
-        self.user = "root"
-        self.password = "123456"
+        # self.host = "localhost"
+        # self.user = "root"
+        # self.password = "123456"
+        # self.database_name = "user_data"
+        # self.table_name = "customers"
+        #####################################
+        self.host = "root.cj42cemgqw9g.ap-southeast-1.rds.amazonaws.com"
+        self.user = "admin"
+        self.password = "km22071994"
         self.database_name = "user_data"
         self.table_name = "customers"
+        #################################
+        # Cấu hình connection pool
+        self.dbconfig = {
+            "user": self.user,
+            "password": self.password,
+            "host": self.host,
+            "database": self.database_name
+        }
+        self.cnxpool = pooling.MySQLConnectionPool(pool_name="mypool",
+                                                   pool_size=5,
+                                                   **self.dbconfig)
 
         self.create_database()
         self.define_routes()
 
+    def get_db_connection(self):
+        return self.cnxpool.get_connection()
+    
     def create_database(self):
         mysql_instance = mysql_data(self.host, self.user, self.password, self.database_name, self.table_name)
         Thread(target=mysql_instance.create_database).start()
-
-    def get_db_connection(self):
-        return mysql.connector.connect(
-            host=self.host,
-            user=self.user,
-            password=self.password,
-            database=self.database_name
-        )
 
     def define_routes(self):
         @self.app.route('/check')
@@ -89,7 +100,9 @@ class MyApp:
                     session['loggedin'] = True
                     session['id'] = customer['id']
                     session['username'] = customer['username']
-                    msg = f'Logged in successfully! {customer["expdate"]}'
+                    date_now = datetime.datetime.now()
+                    msg = f'Logged in successfully! {customer["expdate"]}/{date_now}'
+                    
                 else:
                     msg = 'Incorrect username or password. Please try again.'
                 cursor.close()
@@ -98,7 +111,7 @@ class MyApp:
 
         @self.app.route('/register', methods=['GET', 'POST'])
         def register():
-            msg = '' 
+            msg = ''
             if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'passport' in request.form:
                 username = request.form['username']
                 password = request.form['password']
@@ -117,11 +130,11 @@ class MyApp:
                 elif not username or not password:
                     msg = 'Please fill out the form!'
                 else:
-                    current_time = get_time()
+                    current_time = datetime.datetime.now()
                     cursor.execute(f'INSERT INTO {self.table_name} (username, password, expdate, passport) VALUES (%s, %s, %s, %s)', (username, password, current_time, passport))
                     conn.commit()
                     msg = 'You have successfully registered!'
-                    # send_mess_tele(self.list_token, self.group_id, f"Register success\nAccount: {username}\nPassword: {password}")
+                    send_mess_tele(self.list_token, self.group_id, f"Register success\nAccount: {username}\nPassword: {password}")
                 cursor.close()
                 conn.close()
             elif request.method == 'POST':
@@ -129,37 +142,29 @@ class MyApp:
             return render_template('register.html', msg=msg)
 
         @self.app.route('/expdate', methods=['GET', 'POST'])
-        def approval():
+        def expdate():
             print("expdate")
             if 'username' in session:
                 msg = ''
-                if request.method == 'POST' and "username" in request.form and "expdate" in request.form:
-                    username = request.form['username']
+                if request.method == 'POST' and "expdate" in request.form and "expdate" in request.form:
+                    passport = request.form['passport']
                     expdate = request.form['expdate']
-
-                    current_time = get_time()
-                    print(current_time, expdate)
+                    current_time = datetime.datetime.now()
                     future_time = current_time + datetime.timedelta(days=int(expdate))
                     print(future_time)
-                    # try:
                     conn = self.get_db_connection()
                     cursor = conn.cursor(dictionary=True)
-                    cursor.execute(f"SELECT * FROM {self.table_name} WHERE username = %s", (username,))
+                    cursor.execute(f"SELECT * FROM {self.table_name} WHERE username = %s", (passport,))
                     customer = cursor.fetchone()
                     if customer:
                         msg = 'Approval successfully!'
-                        cursor.execute(f"UPDATE {self.table_name} SET {'expdate'} = %s WHERE username = %s", (future_time, username))
+                        cursor.execute(f"UPDATE {self.table_name} SET expdate = %s WHERE passport = %s", (future_time, passport))
                         conn.commit()
                     else:
-                        msg = 'Incorrect username. Please try again.'
+                        msg = 'Incorrect passport. Please try again.'
                     cursor.close()
                     conn.close()
-                    # except mysql.connector.Error as err:
-                    #     msg = f"Error: {err}"
-                    # finally:
-                    #     cursor.close()
-                    #     conn.close()
-                return render_template('approval.html', msg=msg, column_name='expdate')
+                return render_template('approval.html', msg=msg)
             else:
                 return redirect(url_for('index'))
 
@@ -180,9 +185,7 @@ class MyApp:
 
 # Create an instance of MyApp
 app_instance = MyApp()
-
 # Export the Flask app for Gunicorn
 app = app_instance.app
-
 if __name__ == "__main__":
     app_instance.run()
