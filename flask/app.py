@@ -8,43 +8,41 @@ import datetime
 from mysql1 import mysql_data
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
-def send_mess_tele(token: str, group_id: str, content: str):
+# def get_time():
+#     response = requests.get("http://worldtimeapi.org/api/timezone/Asia/Ho_Chi_Minh")
+#     data = response.json()
+#     current_time_str = data['datetime']
+#     current_time = datetime.datetime.fromisoformat(current_time_str)
+#     return current_time
+def send_mess_tele(content: str):
+    token = '6739713852:AAF5_7U00NuBBVxlZMRCuKoFRka3uyfG5qM'
+    group_id = '-1002027749340'
     try:
-        print(f"Telegram Token: {token}")
-        print(f"Telegram Group ID: {group_id}")
         bot = telebot.TeleBot(token=token)
         bot.send_message(chat_id=group_id, text=content)
     except Exception as e:
         print(f"Failed to send message: {e}")
 
-def get_time():
-    response = requests.get("http://worldtimeapi.org/api/timezone/Asia/Ho_Chi_Minh")
-    data = response.json()
-    current_time_str = data['datetime']
-    current_time = datetime.datetime.fromisoformat(current_time_str)
-    return current_time
+
 
 class MyApp:
     def __init__(self):
         self.app = Flask(__name__)
-        self.list_token = '6974585517:AAFXdPKmyb050h1vm_HLYndFd8rBQyU4vwI'
-        self.group_id = "-4214402614"
-
         self.valid_username = "nhothoang"
         self.valid_password = "km@123456"
         self.app.secret_key = 'nhothoang'
 
-        # self.host = "localhost"
-        # self.user = "root"
-        # self.password = "123456"
-        # self.database_name = "user_data"
-        # self.table_name = "customers"
-        #####################################
-        self.host = "root.cj42cemgqw9g.ap-southeast-1.rds.amazonaws.com"
-        self.user = "admin"
-        self.password = "km22071994"
+        self.host = "localhost"
+        self.user = "root"
+        self.password = "123456"
         self.database_name = "user_data"
         self.table_name = "customers"
+        #####################################
+        # self.host = "root.cj42cemgqw9g.ap-southeast-1.rds.amazonaws.com"
+        # self.user = "admin"
+        # self.password = "km22071994"
+        # self.database_name = "user_data"
+        # self.table_name = "customers"
         #################################
         # Cấu hình connection pool
         self.dbconfig = {
@@ -101,7 +99,7 @@ class MyApp:
                     session['id'] = customer['id']
                     session['username'] = customer['username']
                     date_now = datetime.datetime.now()
-                    msg = f'Logged in successfully! {customer["expdate"]}/{date_now}'
+                    msg = f'Logged in successfully/{customer["idexcel"]},{customer["idinfor"]}!{customer["expdate"]}/{date_now}'
                     
                 else:
                     msg = 'Incorrect username or password. Please try again.'
@@ -134,7 +132,7 @@ class MyApp:
                     cursor.execute(f'INSERT INTO {self.table_name} (username, password, expdate, passport) VALUES (%s, %s, %s, %s)', (username, password, current_time, passport))
                     conn.commit()
                     msg = 'You have successfully registered!'
-                    send_mess_tele(self.list_token, self.group_id, f"Register success\nAccount: {username}\nPassword: {password}")
+                    send_mess_tele(content=f"Register success\n👉Account: {username}\n👉Password: {password}")
                 cursor.close()
                 conn.close()
             elif request.method == 'POST':
@@ -167,6 +165,63 @@ class MyApp:
                 return render_template('approval.html', msg=msg)
             else:
                 return redirect(url_for('index'))
+        @self.app.route('/update_ids', methods=['GET','POST'])
+        def update_ids():
+            msg = ''
+            if request.method == 'POST':
+                username = request.form['username']
+                idexcel = request.form['idexcel']
+                idinfor = request.form['idinfor']
+                conn = app_instance.get_db_connection()
+                cursor = conn.cursor()
+                # Kiểm tra xem người dùng có tồn tại hay không
+                cursor.execute(f"SELECT * FROM {app_instance.table_name} WHERE username = %s", (username,))
+                user = cursor.fetchone()
+                if user:
+                    # Cập nhật idexcel và idinfor cho người dùng
+                    cursor.execute(f"UPDATE {app_instance.table_name} SET idexcel = %s, idinfor = %s WHERE username = %s",
+                                (idexcel, idinfor, username))
+                    conn.commit()
+                    msg = "Update successful!"
+                else:
+                    msg = "Username not found."
+                cursor.close()
+                conn.close()
+            
+            return render_template('update_ids.html', msg=msg)
+        @self.app.route('/get_ids', methods=['GET', 'POST'])
+        def get_ids():
+            msg = ''
+            idexcel = ''
+            idinfor = ''
+            if request.method == 'POST':
+                username = request.form['username']
+
+                conn = app_instance.get_db_connection()
+                cursor = conn.cursor()
+                # Kiểm tra xem người dùng có tồn tại hay không
+                cursor.execute(f"SELECT idexcel, idinfor FROM {app_instance.table_name} WHERE username = %s", (username,))
+                user = cursor.fetchone()
+                if user:
+                    msg = user
+                else:
+                    msg = "Username not found."
+                cursor.close()
+                conn.close()
+            return render_template('get_ids.html', msg=msg)
+
+
+
+        @self.app.route('/users_accounts', methods=['GET'])
+        def users_accounts():
+            conn = self.get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(f"SELECT * FROM {self.table_name}")
+            customers = cursor.fetchall()  # Lấy tất cả dữ liệu từ bảng
+            cursor.close()
+            conn.close()
+            return render_template('users_accounts.html', customers=customers)
+
 
         @self.app.route('/logout')
         def logout():

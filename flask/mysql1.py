@@ -20,7 +20,10 @@ class mysql_data:
             username VARCHAR(255) NOT NULL,
             password VARCHAR(255) NOT NULL,
             passport VARCHAR(255) NOT NULL,
-            expdate VARCHAR(255))
+            expdate VARCHAR(255),
+            idexcel VARCHAR(255),
+            idinfor VARCHAR(255)
+            )
             """)
         connect.commit()
         cursor.close()
