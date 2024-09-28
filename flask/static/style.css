@@ -11,8 +11,10 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+    background-color: black;
+    /* background-color: rgb(216, 149, 24); */
     /* background: url(bg.svg); */
-    background: url(bg.svg) no-repeat center center/cover;
+    /* background: url(bg.svg) no-repeat center center/cover; */
   }
   
   main{

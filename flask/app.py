@@ -8,14 +8,8 @@ import datetime
 from mysql1 import mysql_data
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
-# def get_time():
-#     response = requests.get("http://worldtimeapi.org/api/timezone/Asia/Ho_Chi_Minh")
-#     data = response.json()
-#     current_time_str = data['datetime']
-#     current_time = datetime.datetime.fromisoformat(current_time_str)
-#     return current_time
 def send_mess_tele(content: str):
-    token = '6739713852:AAF5_7U00NuBBVxlZMRCuKoFRka3uyfG5qM'
+    token = 'YOUR_TELEGRAM_BOT_TOKEN'
     group_id = '-1002027749340'
     try:
         bot = telebot.TeleBot(token=token)
@@ -23,26 +17,24 @@ def send_mess_tele(content: str):
     except Exception as e:
         print(f"Failed to send message: {e}")
 
-
-
 class MyApp:
     def __init__(self):
         self.app = Flask(__name__)
         self.valid_username = "nhothoang"
         self.valid_password = "km@123456"
         self.app.secret_key = 'nhothoang'
-
-        self.host = "localhost"
-        self.user = "root"
-        self.password = "123456"
-        self.database_name = "user_data"
-        self.table_name = "customers"
-        #####################################
-        # self.host = "root.cj42cemgqw9g.ap-southeast-1.rds.amazonaws.com"
-        # self.user = "admin"
-        # self.password = "km22071994"
+        ######################################################################
+        # self.host = "localhost"
+        # self.user = "root"
+        # self.password = "123456"
         # self.database_name = "user_data"
         # self.table_name = "customers"
+        #####################################  
+        self.host = "root.cj42cemgqw9g.ap-southeast-1.rds.amazonaws.com"
+        self.user = "admin"
+        self.password = "km22071994"
+        self.database_name = "user_data"
+        self.table_name = "customers"
         #################################
         # Cấu hình connection pool
         self.dbconfig = {
@@ -69,178 +61,170 @@ class MyApp:
         @self.app.route('/check')
         def index():
             if 'username' in session:
-                return redirect(url_for('expdate'))
-            return render_template('login1.html')
+                return redirect(url_for('users_accounts'))
+            return render_template('login_admin.html')
 
-        @self.app.route('/login1', methods=['POST'])
-        def login1():
-            entered_username = request.form.get('username')
-            entered_password = request.form.get('password')
+        @self.app.route('/admin_login', methods=['GET', 'POST'])
+        def admin_login():
+            if request.method == 'POST':
+                return self.handle_login_admin()
+            return render_template('login_admin.html')
 
-            if entered_username == self.valid_username and entered_password == self.valid_password:
-                session['username'] = entered_username
-                return redirect(url_for('expdate'))
-            else:
-                return render_template('login1.html', error="Invalid username or password")
 
         @self.app.route('/login', methods=['GET', 'POST'])
         @self.app.route('/', methods=['GET', 'POST'])
         def login():
-            msg = ''
-            if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
-                username = request.form['username']
-                password = request.form['password']
-                conn = self.get_db_connection()
-                cursor = conn.cursor(dictionary=True)
-                cursor.execute(f'SELECT * FROM {self.table_name} WHERE username = %s AND password = %s', (username, password))
-                customer = cursor.fetchone()
-                if customer:
-                    session['loggedin'] = True
-                    session['id'] = customer['id']
-                    session['username'] = customer['username']
-                    date_now = datetime.datetime.now()
-                    msg = f'Logged in successfully/{customer["idexcel"]},{customer["idinfor"]}!{customer["expdate"]}/{date_now}'
-                    
-                else:
-                    msg = 'Incorrect username or password. Please try again.'
-                cursor.close()
-                conn.close()
-            return render_template('login.html', msg=msg)
+            if request.method == 'POST':
+                return self.handle_login()
+            return render_template('login.html')
 
         @self.app.route('/register', methods=['GET', 'POST'])
         def register():
-            msg = ''
-            if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'passport' in request.form:
-                username = request.form['username']
-                password = request.form['password']
-                passport = request.form['passport']
-                conn = self.get_db_connection()
-                cursor = conn.cursor(dictionary=True)
-                cursor.execute(f'SELECT * FROM {self.table_name} WHERE username = %s OR passport = %s', (username, passport))
-                existing_user = cursor.fetchone()
-                if existing_user:
-                    if existing_user['username'] == username:
-                        msg = 'Username already exists!'
-                    elif existing_user['passport'] == passport:
-                        msg = 'Passport already exists!'
-                elif not re.match(r'[A-Za-z0-9]+', username):
-                    msg = 'Username must contain only characters and numbers!'
-                elif not username or not password:
-                    msg = 'Please fill out the form!'
-                else:
-                    current_time = datetime.datetime.now()
-                    cursor.execute(f'INSERT INTO {self.table_name} (username, password, expdate, passport) VALUES (%s, %s, %s, %s)', (username, password, current_time, passport))
-                    conn.commit()
-                    msg = 'You have successfully registered!'
-                    send_mess_tele(content=f"Register success\n👉Account: {username}\n👉Password: {password}")
-                cursor.close()
-                conn.close()
-            elif request.method == 'POST':
-                msg = 'Please fill out the form!'
-            return render_template('register.html', msg=msg)
-
-        @self.app.route('/expdate', methods=['GET', 'POST'])
-        def expdate():
-            print("expdate")
-            if 'username' in session:
-                msg = ''
-                if request.method == 'POST' and "expdate" in request.form and "expdate" in request.form:
-                    passport = request.form['passport']
-                    expdate = request.form['expdate']
-                    current_time = datetime.datetime.now()
-                    future_time = current_time + datetime.timedelta(days=int(expdate))
-                    print(future_time)
-                    conn = self.get_db_connection()
-                    cursor = conn.cursor(dictionary=True)
-                    cursor.execute(f"SELECT * FROM {self.table_name} WHERE username = %s", (passport,))
-                    customer = cursor.fetchone()
-                    if customer:
-                        msg = 'Approval successfully!'
-                        cursor.execute(f"UPDATE {self.table_name} SET expdate = %s WHERE passport = %s", (future_time, passport))
-                        conn.commit()
-                    else:
-                        msg = 'Incorrect passport. Please try again.'
-                    cursor.close()
-                    conn.close()
-                return render_template('approval.html', msg=msg)
-            else:
-                return redirect(url_for('index'))
-        @self.app.route('/update_ids', methods=['GET','POST'])
-        def update_ids():
-            msg = ''
             if request.method == 'POST':
-                username = request.form['username']
-                idexcel = request.form['idexcel']
-                idinfor = request.form['idinfor']
-                conn = app_instance.get_db_connection()
-                cursor = conn.cursor()
-                # Kiểm tra xem người dùng có tồn tại hay không
-                cursor.execute(f"SELECT * FROM {app_instance.table_name} WHERE username = %s", (username,))
-                user = cursor.fetchone()
-                if user:
-                    # Cập nhật idexcel và idinfor cho người dùng
-                    cursor.execute(f"UPDATE {app_instance.table_name} SET idexcel = %s, idinfor = %s WHERE username = %s",
-                                (idexcel, idinfor, username))
-                    conn.commit()
-                    msg = "Update successful!"
-                else:
-                    msg = "Username not found."
-                cursor.close()
-                conn.close()
-            
-            return render_template('update_ids.html', msg=msg)
-        @self.app.route('/get_ids', methods=['GET', 'POST'])
-        def get_ids():
-            msg = ''
-            idexcel = ''
-            idinfor = ''
-            if request.method == 'POST':
-                username = request.form['username']
-
-                conn = app_instance.get_db_connection()
-                cursor = conn.cursor()
-                # Kiểm tra xem người dùng có tồn tại hay không
-                cursor.execute(f"SELECT idexcel, idinfor FROM {app_instance.table_name} WHERE username = %s", (username,))
-                user = cursor.fetchone()
-                if user:
-                    msg = user
-                else:
-                    msg = "Username not found."
-                cursor.close()
-                conn.close()
-            return render_template('get_ids.html', msg=msg)
-
-
+                return self.handle_registration()
+            return render_template('register.html')
 
         @self.app.route('/users_accounts', methods=['GET'])
         def users_accounts():
-            conn = self.get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute(f"SELECT * FROM {self.table_name}")
-            customers = cursor.fetchall()  # Lấy tất cả dữ liệu từ bảng
-            cursor.close()
-            conn.close()
-            return render_template('users_accounts.html', customers=customers)
+            if 'username' in session:
+                return self.list_users_accounts()
+            return redirect(url_for('admin_login'))
 
+        @self.app.route('/update_customer', methods=['POST'])
+        def update_customer():
+            return self.handle_update_customer()
+
+        @self.app.route('/delete_customer', methods=['POST'])
+        def delete_customer():
+            return self.handle_delete_customer()
 
         @self.app.route('/logout')
         def logout():
-            session.pop('loggedin', None)
-            session.pop('id', None)
-            session.pop('username', None)
+            session.clear()
             return redirect(url_for('login'))
+    def handle_login_admin(self):
+        entered_username = request.form.get('username')
+        entered_password = request.form.get('password')
 
-        @self.app.route('/logout2')
-        def logout2():
-            session.pop('username', None)
-            return redirect(url_for('index'))
+        if entered_username == self.valid_username and entered_password == self.valid_password:
+            session['username'] = entered_username
+            return redirect(url_for('users_accounts'))
+        else:
+            return render_template('login_admin.html', error="Invalid username or password")
+
+    def handle_login(self):
+        msg = ''
+        if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'uuid' in request.form:
+            username = request.form['username']
+            password = request.form['password']
+            uuid = request.form['uuid']
+            conn = self.get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(f'SELECT * FROM {self.table_name} WHERE username = %s AND password = %s AND uuid = %s', (username, password, uuid))
+            customer = cursor.fetchone()
+            print(customer)
+            if customer:
+                session['loggedin'] = True
+                session['id'] = customer['id']
+                session['username'] = customer['username']
+                current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+                msg = f'Logged in successfully/{current_date}/{customer["expdate"]}'
+                
+            else:
+                msg = 'Incorrect username or password. Please try again.'
+            cursor.close()
+            conn.close()
+        return render_template('login.html', msg=msg)
+
+    def handle_registration(self):
+        msg = ''
+        username = request.form.get('username')
+        password = request.form.get('password')
+        phone = request.form.get('phone')
+        address = request.form.get('address')
+        uuid = request.form.get('uuid')
+
+        conn = self.get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(f'SELECT username FROM {self.table_name} WHERE username = %s', (username,))
+        existing_user = cursor.fetchone()
+        
+        if existing_user:
+            msg = 'Username already exists!'
+        elif not re.match(r'[A-Za-z0-9]+', username):
+            msg = 'Username must contain only characters and numbers!'
+        elif not username or not password:
+            msg = 'Please fill out the form!'
+        else:
+            current_time = datetime.datetime.now().strftime('%Y-%m-%d')
+            cursor.execute(f'INSERT INTO {self.table_name} (username, password, phone ,address, expdate, uuid) VALUES (%s, %s, %s, %s, %s, %s)', (username, password, phone, address, current_time, uuid))
+            conn.commit()
+            msg = 'You have successfully registered!'
+        
+        cursor.close()
+        conn.close()
+        return render_template('register.html', msg=msg)
+
+    def list_users_accounts(self):
+        conn = self.get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(f"SELECT * FROM {self.table_name}")
+        customers = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return render_template('users_accounts.html', customers=customers)
+
+    def handle_update_customer(self):
+        customer_id = request.form['id']
+        username = request.form['username']
+        password = request.form['password']
+        phone = request.form['phone']
+        address = request.form['address']
+        expdate = request.form['expdate']
+        uuid = request.form['uuid']
+        inforuser = request.form['inforuser']
+        timesapproval = request.form['timesapproval']
+        notes = request.form['notes']
+
+        update_query = """
+        UPDATE customers SET 
+            username = %s, 
+            password = %s, 
+            phone = %s, 
+            address = %s, 
+            expdate = %s, 
+            uuid = %s, 
+            inforuser = %s, 
+            timesapproval = %s, 
+            notes = %s 
+        WHERE id = %s
+        """
+        conn = self.get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(update_query, (username, password, phone, address, expdate, uuid, inforuser, timesapproval, notes, customer_id))
+        conn.commit()
+        cursor.close()
+        conn.close()    
+
+        return jsonify({'status': 'success'})
+
+    def handle_delete_customer(self):
+        customer_id = request.form['id']
+        delete_query = "DELETE FROM customers WHERE id = %s"
+        conn = self.get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(delete_query, (customer_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'success'})
 
     def run(self):
         self.app.run(debug=True)
 
 # Create an instance of MyApp
 app_instance = MyApp()
-# Export the Flask app for Gunicorn
 app = app_instance.app
+
 if __name__ == "__main__":
     app_instance.run()

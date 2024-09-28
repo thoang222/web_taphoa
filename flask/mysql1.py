@@ -19,10 +19,13 @@ class mysql_data:
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             username VARCHAR(255) NOT NULL,
             password VARCHAR(255) NOT NULL,
-            passport VARCHAR(255) NOT NULL,
-            expdate VARCHAR(255),
-            idexcel VARCHAR(255),
-            idinfor VARCHAR(255)
+            phone VARCHAR(255) NOT NULL,
+            address VARCHAR(255) NOT NULL,
+            expdate DATE NOT NULL,
+            uuid VARCHAR(255) NOT NULL,
+            inforuser VARCHAR(255),
+            timesapproval VARCHAR(255),
+            notes VARCHAR(255)
             )
             """)
         connect.commit()
