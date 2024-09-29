@@ -149,9 +149,7 @@ class MyApp:
         cursor = conn.cursor(dictionary=True)
         cursor.execute(f'SELECT username FROM {self.table_name} WHERE username = %s', (username,))
         existing_user = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        
+
         if existing_user:
             msg = 'Username already exists!'
         elif not re.match(r'[A-Za-z0-9]+', username):
@@ -164,7 +162,9 @@ class MyApp:
             conn.commit()
             msg = 'You have successfully registered!'
         
-
+        cursor.close()
+        conn.close()
+        
         return render_template('register.html', msg=msg)
 
     def list_users_accounts(self):
