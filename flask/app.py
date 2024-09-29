@@ -24,17 +24,17 @@ class MyApp:
         self.valid_password = "km@123456"
         self.app.secret_key = 'nhothoang'
         ######################################################################
-        # self.host = "localhost"
-        # self.user = "root"
-        # self.password = "123456"
-        # self.database_name = "user_data"
-        # self.table_name = "customers"
-        #####################################  
-        self.host = "root.cj42cemgqw9g.ap-southeast-1.rds.amazonaws.com"
-        self.user = "admin"
-        self.password = "km22071994"
+        self.host = "localhost"
+        self.user = "root"
+        self.password = "123456"
         self.database_name = "user_data"
         self.table_name = "customers"
+        #####################################  
+        # self.host = "root.cj42cemgqw9g.ap-southeast-1.rds.amazonaws.com"
+        # self.user = "admin"
+        # self.password = "km22071994"
+        # self.database_name = "user_data"
+        # self.table_name = "customers"
         #################################
         # Cấu hình connection pool
         self.dbconfig = {
@@ -114,7 +114,7 @@ class MyApp:
 
     def handle_login(self):
         msg = ''
-        if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'uuid' in request.form:
+        if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'uuid' in request.form and 'inforuser' in request.form:
             username = request.form['username']
             password = request.form['password']
             uuid = request.form['uuid']
@@ -143,6 +143,7 @@ class MyApp:
         phone = request.form.get('phone')
         address = request.form.get('address')
         uuid = request.form.get('uuid')
+        inforuser = request.form.get('inforuser')
 
         conn = self.get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -157,7 +158,7 @@ class MyApp:
             msg = 'Please fill out the form!'
         else:
             current_time = datetime.datetime.now().strftime('%Y-%m-%d')
-            cursor.execute(f'INSERT INTO {self.table_name} (username, password, phone ,address, expdate, uuid) VALUES (%s, %s, %s, %s, %s, %s)', (username, password, phone, address, current_time, uuid))
+            cursor.execute(f'INSERT INTO {self.table_name} (username, password, phone ,address, expdate, uuid, inforuser) VALUES (%s, %s, %s, %s, %s, %s, %s)', (username, password, phone, address, current_time, uuid, inforuser))
             conn.commit()
             msg = 'You have successfully registered!'
         
