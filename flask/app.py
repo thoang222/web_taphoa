@@ -114,7 +114,7 @@ class MyApp:
 
     def handle_login(self):
         msg = ''
-        if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'uuid' in request.form and 'inforuser' in request.form:
+        if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'uuid' in request.form:
             username = request.form['username']
             password = request.form['password']
             uuid = request.form['uuid']
@@ -122,18 +122,18 @@ class MyApp:
             cursor = conn.cursor(dictionary=True)
             cursor.execute(f'SELECT * FROM {self.table_name} WHERE username = %s AND password = %s AND uuid = %s', (username, password, uuid))
             customer = cursor.fetchone()
-            print(customer)
+            cursor.close()
+            conn.close()
+
             if customer:
                 session['loggedin'] = True
                 session['id'] = customer['id']
                 session['username'] = customer['username']
                 current_date = datetime.datetime.now().strftime("%Y-%m-%d")
                 msg = f'Logged in successfully/{current_date}/{customer["expdate"]}'
-                
             else:
                 msg = 'Incorrect username or password. Please try again.'
-            cursor.close()
-            conn.close()
+
         return render_template('login.html', msg=msg)
 
     def handle_registration(self):
@@ -149,6 +149,8 @@ class MyApp:
         cursor = conn.cursor(dictionary=True)
         cursor.execute(f'SELECT username FROM {self.table_name} WHERE username = %s', (username,))
         existing_user = cursor.fetchone()
+        cursor.close()
+        conn.close()
         
         if existing_user:
             msg = 'Username already exists!'
@@ -162,8 +164,7 @@ class MyApp:
             conn.commit()
             msg = 'You have successfully registered!'
         
-        cursor.close()
-        conn.close()
+
         return render_template('register.html', msg=msg)
 
     def list_users_accounts(self):

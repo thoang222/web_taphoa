@@ -73,6 +73,7 @@ class MyApp:
         @self.app.route('/', methods=['GET', 'POST'])
         def login():
             msg = ''
+            print("FVSAJKFGKJAGFKJASGFKJASGFHASGFHASGF")
             if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'uuid' in request.form:
                 username = request.form['username']
                 password = request.form['password']
