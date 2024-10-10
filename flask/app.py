@@ -55,7 +55,8 @@ class MyApp:
     
     def create_database(self):
         mysql_instance = mysql_data(self.host, self.user, self.password, self.database_name, self.table_name)
-        Thread(target=mysql_instance.create_database).start()
+        mysql_instance.connect_database()
+        mysql_instance.create_database()
 
     def define_routes(self):
         @self.app.route('/check')
@@ -168,13 +169,24 @@ class MyApp:
         return render_template('register.html', msg=msg)
 
     def list_users_accounts(self):
+        page = request.args.get('page', 1, type=int)
+        per_page = 100  # Số lượng bản ghi mỗi trang
+    
         conn = self.get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute(f"SELECT * FROM {self.table_name}")
+
+        cursor.execute(f"SELECT COUNT(*) AS total FROM {self.table_name}")
+        total = cursor.fetchone()['total']
+        offset = (page - 1) * per_page
+        cursor.execute(f"SELECT * FROM {self.table_name} LIMIT %s OFFSET %s", (per_page, offset))
+
         customers = cursor.fetchall()
+
         cursor.close()
         conn.close()
-        return render_template('users_accounts.html', customers=customers)
+        # total_pages = (total - 1) // per_page + 1
+        total_pages = (total + per_page - 1) // per_page
+        return render_template('users_accounts.html', customers=customers, page=page,  total_pages=total_pages)
 
     def handle_update_customer(self):
         customer_id = request.form['id']
