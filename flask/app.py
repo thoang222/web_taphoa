@@ -21,7 +21,7 @@ class MyApp:
     def __init__(self):
         self.app = Flask(__name__)
         self.valid_username = "nhothoang"
-        self.valid_password = "km@123456"
+        self.valid_password = "nd@04121994"
         self.app.secret_key = 'nhothoang'
         ######################################################################
         self.host = "localhost"
@@ -59,18 +59,17 @@ class MyApp:
         mysql_instance.create_database()
 
     def define_routes(self):
-        @self.app.route('/check')
-        def index():
-            if 'username' in session:
-                return redirect(url_for('users_accounts'))
-            return render_template('login_admin.html')
-
         @self.app.route('/admin_login', methods=['GET', 'POST'])
         def admin_login():
             if request.method == 'POST':
                 return self.handle_login_admin()
             return render_template('login_admin.html')
 
+        @self.app.route('/users_accounts/<int:page>', methods=['GET', 'POST'])
+        def users_accounts(page=1):
+            if 'username' in session:
+                return self.list_users_accounts(page=page)
+            return redirect(url_for('admin_login'))
 
         @self.app.route('/login', methods=['GET', 'POST'])
         @self.app.route('/', methods=['GET', 'POST'])
@@ -85,11 +84,7 @@ class MyApp:
                 return self.handle_registration()
             return render_template('register.html')
 
-        @self.app.route('/users_accounts', methods=['GET'])
-        def users_accounts():
-            if 'username' in session:
-                return self.list_users_accounts()
-            return redirect(url_for('admin_login'))
+
 
         @self.app.route('/update_customer', methods=['POST'])
         def update_customer():
@@ -103,13 +98,89 @@ class MyApp:
         def logout():
             session.clear()
             return redirect(url_for('login'))
+        
+        @self.app.route('/search_results', methods=['POST'])
+        def search_results():
+            query = request.form['search_query']  # Get the search query from the form
+            users = self.search_users(query)  # Get users matching the query
+            # print(users)
+            return render_template('search_results.html', users=users)
+        
+        @self.app.route('/search/suggestions', methods=['GET'])
+        def search_suggestions():
+            query = request.args.get('q', '')  # Get query parameter
+            suggestions = self.get_user_suggestions(query)  # Get user suggestions
+            return jsonify(suggestions)
+
+        @self.app.route('/duplicate_users', methods=['GET'])
+        def duplicate_user():
+            return self.find_users_duplicate()
+        @self.app.route('/duplicate_uuids', methods=['GET'])
+        def duplicate_uuid():
+            return self.find_uuid_duplicate()
+        
+    def find_uuid_duplicate(self):
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+        # Câu lệnh SQL đã được sửa
+        cursor.execute(f'SELECT uuid, COUNT(*) FROM {self.table_name} GROUP BY uuid HAVING COUNT(*) > 1')
+        duplicate_uuids = cursor.fetchall()
+        print("ASfasfasfasf", duplicate_uuids)
+        cursor.close()
+        conn.close()
+        return render_template("duplicate_uuid.html", duplicate_uuids=duplicate_uuids)
+    def find_users_duplicate(self):
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+        # Câu lệnh SQL đã được sửa
+        cursor.execute(f'''
+            SELECT username, uuid 
+            FROM {self.table_name} 
+            WHERE uuid IN (
+                SELECT uuid 
+                FROM {self.table_name} 
+                GROUP BY uuid 
+                HAVING COUNT(*) > 1
+            )
+        ''')
+        duplicate_uuids = cursor.fetchall()
+        print("ASfasfasfasf", duplicate_uuids)
+        cursor.close()
+        conn.close()
+        return render_template("duplicate_users.html", duplicate_uuids=duplicate_uuids)
+
+
+    def get_user_suggestions(self, query):
+        conn = self.get_db_connection()
+        try:
+            # cursor = conn.cursor(dictionary=True)
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT username FROM {self.table_name} WHERE username LIKE %s", (f'%{query}%',))
+            suggestions = [row[0] for row in cursor.fetchall()]
+        except Exception as e:
+            print(f"Failed to get user suggestions: {e}")
+        cursor.close()
+        conn.close()
+        return suggestions
+    def search_users(self, query):
+        conn = self.get_db_connection()
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(f"SELECT * FROM {self.table_name} WHERE username LIKE %s", (f'%{query}%',))
+            users = cursor.fetchall()
+        except Exception as e:
+            print(f"Failed to search users: {e}")
+        cursor.close()
+        conn.close() 
+        return users
+    
     def handle_login_admin(self):
         entered_username = request.form.get('username')
         entered_password = request.form.get('password')
 
         if entered_username == self.valid_username and entered_password == self.valid_password:
             session['username'] = entered_username
-            return redirect(url_for('users_accounts'))
+            return redirect(url_for('users_accounts', page=1))
         else:
             return render_template('login_admin.html', error="Invalid username or password")
 
@@ -134,8 +205,9 @@ class MyApp:
                 msg = f'Logged in successfully/{current_date}/{customer["expdate"]}'
             else:
                 msg = 'Incorrect username or password. Please try again.'
-
         return render_template('login.html', msg=msg)
+    
+
 
     def handle_registration(self):
         msg = ''
@@ -168,20 +240,19 @@ class MyApp:
         
         return render_template('register.html', msg=msg)
 
-    def list_users_accounts(self):
-        page = request.args.get('page', 1, type=int)
+    def list_users_accounts(self, page=1):
         per_page = 100  # Số lượng bản ghi mỗi trang
-    
         conn = self.get_db_connection()
         cursor = conn.cursor(dictionary=True)
-
-        cursor.execute(f"SELECT COUNT(*) AS total FROM {self.table_name}")
-        total = cursor.fetchone()['total']
-        offset = (page - 1) * per_page
-        cursor.execute(f"SELECT * FROM {self.table_name} LIMIT %s OFFSET %s", (per_page, offset))
-
-        customers = cursor.fetchall()
-
+        try:
+            cursor.execute(f"SELECT COUNT(*) AS total FROM {self.table_name}")
+            total = cursor.fetchone()['total']
+            offset = (page - 1) * per_page
+            cursor.execute(f"SELECT * FROM {self.table_name} LIMIT %s OFFSET %s", (per_page, offset))
+            customers = cursor.fetchall()
+        except Exception as e:
+            print(f"Failed to fetch customers: {e}")
+        # print(customers)
         cursor.close()
         conn.close()
         # total_pages = (total - 1) // per_page + 1
@@ -214,9 +285,12 @@ class MyApp:
         WHERE id = %s
         """
         conn = self.get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(update_query, (username, password, phone, address, expdate, uuid, inforuser, timesapproval, notes, customer_id))
-        conn.commit()
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(update_query, (username, password, phone, address, expdate, uuid, inforuser, timesapproval, notes, customer_id))
+            conn.commit()
+        except Exception as e:
+            print(f"Failed to update customer: {e}")
         cursor.close()
         conn.close()    
 
@@ -226,9 +300,12 @@ class MyApp:
         customer_id = request.form['id']
         delete_query = "DELETE FROM customers WHERE id = %s"
         conn = self.get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(delete_query, (customer_id,))
-        conn.commit()
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(delete_query, (customer_id,))
+            conn.commit()
+        except Exception as e:
+            print(f"Failed to delete customer: {e}")
         cursor.close()
         conn.close()
         return jsonify({'status': 'success'})

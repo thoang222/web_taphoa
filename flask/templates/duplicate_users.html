@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duplicate UUID</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <h1>Duplicate UUID</h1>
+         <button id="duplicate-uuids-btn" class="btn btn-danger mb-3">Duplicate UUID</button>
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>UUID</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for username, uuid in duplicate_uuids %}
+                    <tr>
+                        <td>{{ username }}</td>
+                        <td>{{ uuid }}</td>
+                    </tr>
+                {% endfor %}
+                {% if not duplicate_uuids %}
+                    <tr>
+                        <td colspan="2">No duplicate_uuids found.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    <!-- handel link to uuid_duplicate_count.html  -->
+    <script>
+        $(document).on('click', '#duplicate-uuids-btn', function() {
+            window.location.href = '/duplicate_uuids';
+        });
+    </script>
+    
+</body>
+</html>
